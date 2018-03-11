@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http.xsd">
+
+  <!--  Custom implementation to read from here 
+        control using the path and the expression on which method to call available with the beans
+        -->
+     <bean id="customHandler" class="standalone.handler.CustomHandler" />
+	<int:inbound-channel-adapter channel="quakeinfotrigger.channel" 
+	  ref="customHandler" 
+	>
+		<int:poller fixed-delay="6000"></int:poller>
+	</int:inbound-channel-adapter>
+	
+	<int:channel id="quakeinfo.channel">
+		<int:queue capacity="10"/>
+	</int:channel>
+
+	<int:channel id="quakeinfotrigger.channel"></int:channel>	
+
+    <!-- Explore all the other attributes available with the adapter -->
+	<int-http:outbound-gateway 
+	    id="quakerHttpGateway"
+	    request-channel="quakeinfotrigger.channel"
+	    url="http://jsonplaceholder.typicode.com/users"
+	    http-method="GET"
+	    expected-response-type="java.lang.String"
+	    charset="UTF-8"
+	    reply-timeout="5000"
+	    reply-channel="quakeinfo.channel"
+	    >	    
+	</int-http:outbound-gateway>
+	<!-- Logger is a poller connected to  -->
+	<int:logging-channel-adapter id="messageLogger" log-full-message="true" channel="quakeinfo.channel" level="ERROR">
+		<int:poller fixed-delay="5000" ></int:poller>
+	</int:logging-channel-adapter>
+
+</beans>
